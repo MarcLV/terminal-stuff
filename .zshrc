@@ -64,6 +64,8 @@ ZSH_THEME="mothership"
 # Add wisely, as too many plugins slow down shell startup.
 plugins=(
   git
+  zsh-autosuggestions
+  zsh-syntax-highlighting
 )
 
 source $ZSH/oh-my-zsh.sh
@@ -104,3 +106,18 @@ alias gitp="git pull"
 
 # Check for linked components
 alias links="find ./node_modules/\@* -maxdepth 1 -type l -ls"
+
+# Build all linked packages
+function buildPackages {
+    vanillaBlocksPath="/Users/marlag/Workspaces/vanilla-blocks/packages/"
+    find node_modules/\@*  -maxdepth 1 -type l | while read line; do
+        yarn --cwd $vanillaBlocksPath${line/\node_modules\/} build
+    done
+}
+
+function unlinkPackages {
+    vanillaBlocksPath="/Users/marlag/Workspaces/vanilla-blocks/packages/"
+    find node_modules/\@*  -maxdepth 1 -type l | while read line; do
+        yarn --cwd $vanillaBlocksPath${line/\node_modules\/} unlink
+    done
+}
