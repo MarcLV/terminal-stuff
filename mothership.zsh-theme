@@ -34,7 +34,7 @@ get_pwd() {
 put_spacing() {
 	local git=$(git_prompt_info)
 	if [ ${#git} != 0 ]; then
-		((git=${#git} - 23))
+		((git=${#git} - 21))
 	else
 		git=0
 	fi
@@ -62,7 +62,7 @@ ZSH_THEME_GIT_PROMPT_CLEAN="$fg[green]"
 
 ZSH_THEME_GIT_PROMPT_NONE="$fg[green][✓] "
 ZSH_THEME_GIT_PROMPT_AHEAD="$fg[cyan][↑] "
-ZSH_THEME_GIT_PROMPT_BEHIND="$fg[cyan][↓] "
+ZSH_THEME_GIT_PROMPT_BEHIND="$fg[green][↓] "
 ZSH_THEME_GIT_PROMPT_STAGED="$fg[green][→] "
 ZSH_THEME_GIT_PROMPT_UNSTAGED="$fg[red][←] "
 ZSH_THEME_GIT_PROMPT_UNTRACKED="$fg[white][↝] "
