@@ -28,13 +28,13 @@ git_prompt_info() {
 }
 
 PROMPT='
-%{$fg[cyan]%}┌─[$(timeNow)%{$fg[cyan]%}] ${_current_dir}
+%{$fg[cyan]%}┌─[$(timeNow)%{$fg[cyan]%}] ${_current_dir} ${_return_status}
 %{$fg[cyan]%}└──╼%{$resetcolor%} '
 
-RPROMPT='$(_vi_status)%{$(echotc UP 1)%} %{$reset_color%} $(git_prompt_info)${_return_status}%{$(echotc DO 1)%}'
+RPROMPT='$(_vi_status)%{$(echotc UP 1)%} %{$reset_color%} $(git_prompt_info)%{$(echotc DO 1)%}'
 
-local _current_dir="%{$fg_bold[yellow]%}%3~%{$reset_color%} "
-local _return_status="%{$fg_bold[red]%}%(?..(err)%{$reset_color%}"
+local _current_dir="%{$fg_bold[yellow]%}%2~%{$reset_color%} "
+local _return_status="%{$fg_bold[red]%}%(?..err!)%{$reset_color%}"
 local _hist_no="%{$fg[grey]%}%h%{$reset_color%}"
 
 timeNow() {
@@ -42,12 +42,12 @@ timeNow() {
 }
 
 function _current_dir() {
-  local _max_pwd_length="65"
-  if [[ $(echo -n $PWD | wc -c) -gt ${_max_pwd_length} ]]; then
-    echo "%-2~ ... %3~ "
-  else
-    echo "%~ "
-  fi
+#  local _max_pwd_length="65"
+#  if [[ $(echo -n $PWD | wc -c) -gt ${_max_pwd_length} ]]; then
+#    echo "%-2~ ... %3~ "
+#  else
+#    echo "%~ "
+#  fi
 }
 
 function _user_host() {
@@ -83,27 +83,27 @@ function _git_time_since_commit() {
     years=$((seconds_since_last_commit / 31557600))
 
     # Sub-hours and sub-minutes    
-    sub_hours=$((hours % 24))
     sub_minutes=$((minutes % 60))
-    sub_days=$((minutes % 86400))
-    sub_months=$((minutes % 86400))
-    sub_years=$((minutes % 86400))
+    sub_hours=$((hours % 24))
+    sub_days=$((days % 86400))
+    sub_months=$((months % 2629800))
+    sub_years=$((years % 31557600))
 
     #YEAR
     if [ $months -ge 12 ]; then
-      commit_age="${sub_years}y:${sub_months}m"
+      commit_age="${sub_years} years"
     #MONTH
     elif [ $days -gt 30 ]; then
-      commit_age="${sub_months}m:${sub_days}d"
+      commit_age="${sub_months} months"
     #DAYS
     elif [ $hours -gt 24 ]; then
-      commit_age="${sub_days}d:${sub_hours}h"
+      commit_age="${sub_days} days"
     #HOURS
     elif [ $minutes -gt 60 ]; then
-      commit_age="${sub_hours}h:${sub_minutes}m"
+      commit_age="${sub_hours} hours"
     #MINS
     else
-      commit_age="${minutes}m"
+      commit_age="${minutes} mins"
     fi
 
     color=$ZSH_THEME_GIT_TIME_SINCE_COMMIT_NEUTRAL
