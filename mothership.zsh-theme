@@ -1,3 +1,12 @@
+# Color shortcuts
+CYAN=%{$fg[cyan]%}
+YELLOW=%{$fg_bold[yellow]%}
+WHITE=%{$fg[white]%}
+GREEN=%{$fg[green]%}
+RED=%{$fg[red]%}
+BLUE=%{$fg[blue]%}
+RESET=$reset_color
+
 git_prompt_info() {
 	ref=$(git symbolic-ref HEAD 2> /dev/null) || return
 	INDEX=$(git status --porcelain 2> /dev/null)
@@ -24,53 +33,58 @@ git_prompt_info() {
 		STATUS="$ZSH_THEME_GIT_PROMPT_NONE"
 	fi
 
-	echo "%{$fg[cyan]%}╾─$(_git_time_since_commit)%{$fg[cyan]%}─($STATUS $(parse_git_dirty)%{$fg[cyan]%})─[%{$resetcolor%}%{$fg[yellow]%}$(current_branch)%{$fg[cyan]%}]─╼%{$resetcolor%}"
+	echo "$(_timeSinceCommit) %{$CYAN%}[%{$WHITE%}$(_whatChanged) files%{$CYAN%}] [$STATUS$(parse_git_dirty)%{$CYAN%}] [%{$YELLOW%}$(_currentBranch)%{$CYAN%}]%{$resetcolor%}"
+}
+
+_whatChanged() {
+  command git whatchanged -1 --format=oneline | wc -l
 }
 
 PROMPT='
-%{$fg[cyan]%}┌─[$(timeNow)%{$fg[cyan]%}] ${_current_dir} ${_return_status}
-%{$fg[cyan]%}└──╼%{$resetcolor%} '
+%{$CYAN%}┌─[$(_clock)%{$CYAN%}] ${_current_dir} ${_return_status}
+%{$CYAN%}└$(_userHost)%{$CYAN%}╼ '
 
-RPROMPT='$(_vi_status)%{$(echotc UP 1)%} %{$reset_color%} $(git_prompt_info)%{$(echotc DO 1)%}'
+RPROMPT='$(_viStatus)%{$(echotc UP 1)%} $(git_prompt_info) %{$RESET%}%{$(echotc DO 1)%}'
 
-local _current_dir="%{$fg_bold[yellow]%}%2~%{$reset_color%} "
-local _return_status="%{$fg_bold[red]%}%(?..err!)%{$reset_color%}"
-local _hist_no="%{$fg[grey]%}%h%{$reset_color%}"
+local _current_dir="%{$YELLOW%}%2~%{$RESET%} "
+local _return_status="%{$fg_bold[red]%}%(?..…err!)%{$RESET%}"
 
-timeNow() {
+_clock() {
 	echo $'%F{white}%*%f'
 }
 
-function _current_dir() {
-#  local _max_pwd_length="65"
-#  if [[ $(echo -n $PWD | wc -c) -gt ${_max_pwd_length} ]]; then
-#    echo "%-2~ ... %3~ "
-#  else
-#    echo "%~ "
-#  fi
+_currentBranch() {
+  echo "%18>…>$(current_branch)%>>"
 }
 
-function _user_host() {
+
+_userHost() {
+  # Change user color depending on permissions
+  if [[ $USER == "root" ]]; then
+    rootColor=$RED
+  else
+    rootColor=$CYAN
+  fi
+
+  # Show machine name is ssh connection
   if [[ -n $SSH_CONNECTION ]]; then
     me="%n@%m"
   elif [[ $LOGNAME != $USER ]]; then
     me="%n"
   fi
   if [[ -n $me ]]; then
-    echo "%{$fg[white]%}$me%{$reset_color%}"
+    echo "%{$fg_bold[$rootColor]%}$me$RESET"
   fi
 }
 
-function _vi_status() {
+_viStatus() {
   if {echo $fpath | grep -q "plugins/vi-mode"}; then
     echo "$(vi_mode_prompt_info)"
   fi
 }
 
-# Determine the time since last commit. If branch is clean,
-# use a neutral color, otherwise colors will vary according to time.
-function _git_time_since_commit() {
-# Only proceed if there is actually a commit.
+
+_timeSinceCommit() {
   if last_commit=$(git log --pretty=format:'%at' -1 2> /dev/null); then
     now=$(date +%s)
     seconds_since_last_commit=$((now-last_commit))
@@ -89,58 +103,54 @@ function _git_time_since_commit() {
     sub_months=$((months % 2629800))
     sub_years=$((years % 31557600))
 
-    #YEAR
-    if [ $months -ge 12 ]; then
-      commit_age="${sub_years} years"
-    #MONTH
-    elif [ $days -gt 30 ]; then
-      commit_age="${sub_months} months"
-    #DAYS
-    elif [ $hours -gt 24 ]; then
-      commit_age="${sub_days} days"
-    #HOURS
-    elif [ $minutes -gt 60 ]; then
-      commit_age="${sub_hours} hours"
-    #MINS
-    else
-      commit_age="${minutes} mins"
+    if [ $months -ge 12 ]; then # Years
+      extra_months=$((days - 12))
+      commit_age="${sub_years}y${extra_months}m"
+    elif [ $days -gt 30 ]; then # Months
+      extra_days=$((days - 30))
+      commit_age="${sub_months}m${extra_days}d"
+    elif [ $hours -gt 24 ]; then # Days
+      extra_hours=$((hours - 24))
+      commit_age="${sub_days}d${extra_hours}h"
+    elif [ $minutes -gt 60 ]; then # Hours
+      extra_minutes=$((minutes - 60))
+      commit_age="${sub_hours}h${extra_minutes}m"
+    elif [ $seconds_since_last_commit -lt 60 ]; then # Minutes
+      extra_seconds=$((seconds_since_last_commit - 60))
+      commit_age="${minutes}m${extra_seconds}s"
+    else # Seconds
+      commit_age="${seconds_since_last_commit}s"
     fi
 
     color=$ZSH_THEME_GIT_TIME_SINCE_COMMIT_NEUTRAL
-    echo "%{$fg[cyan]%}[$color$commit_age%{$fg[cyan]%}]%{$reset_color%}"
+    echo "%{$CYAN%}[$color$commit_age%{$CYAN%}]%{$RESET%}"
   fi
 }
 
-if [[ $USER == "root" ]]; then
-  CARETCOLOR="red"
-else
-  CARETCOLOR="white"
-fi
-
-MODE_INDICATOR="%{$fg_bold[yellow]%}❮%{$reset_color%}%{$fg[yellow]%}❮❮%{$reset_color%}"
+MODE_INDICATOR="%{$YELLOW%}❮%{$RESET%}%{$YELLOW%}❮❮%{$RESET%}"
 
 SH_THEME_GIT_PROMPT_PREFIX=""
-ZSH_THEME_GIT_PROMPT_SUFFIX="%{$reset_color%}"
+ZSH_THEME_GIT_PROMPT_SUFFIX="%{$RESET%}"
 
-ZSH_THEME_GIT_PROMPT_NONE="%{$fg[green]%}✓%{$reset_color%}"
-ZSH_THEME_GIT_PROMPT_DIRTY="%{$fg[red]%}dirty%{$reset_color%}"
-ZSH_THEME_GIT_PROMPT_CLEAN="%{$fg[green]%}clean%{$reset_color%}"
-ZSH_THEME_GIT_PROMPT_ADDED="%{$fg[green]%}✚"
-ZSH_THEME_GIT_PROMPT_AHEAD="%{$fg[cyan]%}↑%{$reset_color%}"
-ZSH_THEME_GIT_PROMPT_BEHIND="%{$fg[green]%}↓%{$reset_color%}"
-ZSH_THEME_GIT_PROMPT_STAGED="%{$fg[green]%}→%{$reset_color%}"
-ZSH_THEME_GIT_PROMPT_UNSTAGED="%{$fg[red]%}←%{$reset_color%}"
-ZSH_THEME_GIT_PROMPT_MODIFIED="%{$fg[yellow]%}⚑"
-ZSH_THEME_GIT_PROMPT_DELETED="%{$fg[red]%}x"
-ZSH_THEME_GIT_PROMPT_RENAMED="%{$fg[blue]%}▴"
-ZSH_THEME_GIT_PROMPT_UNMERGED="%{$fg[cyan]%}§"
-ZSH_THEME_GIT_PROMPT_UNTRACKED="%{$fg[white]%}↝"
+ZSH_THEME_GIT_PROMPT_NONE="%{$GREEN%}✓%{$RESET%}"
+ZSH_THEME_GIT_PROMPT_DIRTY="%{$RED%}dirty%{$RESET%}"
+ZSH_THEME_GIT_PROMPT_CLEAN="%{$GREEN%}clean%{$RESET%}"
+ZSH_THEME_GIT_PROMPT_ADDED="%{$GREEN%}✚"
+ZSH_THEME_GIT_PROMPT_AHEAD="%{$CYAN%}↑%{$RESET%}"
+ZSH_THEME_GIT_PROMPT_BEHIND="%{$GREEN%}↓%{$RESET%}"
+ZSH_THEME_GIT_PROMPT_STAGED="%{$GREEN%}→%{$RESET%}"
+ZSH_THEME_GIT_PROMPT_UNSTAGED="%{$RED%}←%{$RESET%}"
+ZSH_THEME_GIT_PROMPT_MODIFIED="%{$YELLOW%}⚑"
+ZSH_THEME_GIT_PROMPT_DELETED="%{$RED%}x"
+ZSH_THEME_GIT_PROMPT_RENAMED="%{$BLUE%}▴"
+ZSH_THEME_GIT_PROMPT_UNMERGED="%{$CYAN%}§"
+ZSH_THEME_GIT_PROMPT_UNTRACKED="%{$WHITE%}↝"
 
 # Colors vary depending on time lapsed.
-ZSH_THEME_GIT_TIME_SINCE_COMMIT_SHORT="%{$fg[green]%}"
-ZSH_THEME_GIT_TIME_SHORT_COMMIT_MEDIUM="%{$fg[yellow]%}"
-ZSH_THEME_GIT_TIME_SINCE_COMMIT_LONG="%{$fg[red]%}"
-ZSH_THEME_GIT_TIME_SINCE_COMMIT_NEUTRAL="%{$fg[white]%}"
+ZSH_THEME_GIT_TIME_SINCE_COMMIT_SHORT="%{$GREEN%}"
+ZSH_THEME_GIT_TIME_SHORT_COMMIT_MEDIUM="%{$YELLOW%}"
+ZSH_THEME_GIT_TIME_SINCE_COMMIT_LONG="%{$RED%}"
+ZSH_THEME_GIT_TIME_SINCE_COMMIT_NEUTRAL="%{$WHITE%}"
 
 # LS colors, made with https://geoff.greer.fm/lscolors/
 export LSCOLORS="exfxcxdxbxegedabagacad"
