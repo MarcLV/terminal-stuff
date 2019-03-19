@@ -115,9 +115,8 @@ _timeSinceCommit() {
     elif [ $minutes -gt 60 ]; then # Hours
       extra_minutes=$((minutes - 60))
       commit_age="${sub_hours}h${extra_minutes}m"
-    elif [ $seconds_since_last_commit -lt 60 ]; then # Minutes
-      extra_seconds=$((seconds_since_last_commit - 60))
-      commit_age="${minutes}m${extra_seconds}s"
+    elif [ $seconds_since_last_commit -gt 60 ]; then # Minutes
+      commit_age="${minutes}m"
     else # Seconds
       commit_age="${seconds_since_last_commit}s"
     fi
