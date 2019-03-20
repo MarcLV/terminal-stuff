@@ -1,10 +1,10 @@
 # Color shortcuts
-CYAN=%{$fg[cyan]%}
+CYAN=%{$fg_no_bold[cyan]%}
 YELLOW=%{$fg_bold[yellow]%}
-WHITE=%{$fg[white]%}
-GREEN=%{$fg[green]%}
-RED=%{$fg[red]%}
-BLUE=%{$fg[blue]%}
+WHITE=%{$fg_no_bold[white]%}
+GREEN=%{$fg_no_bold[green]%}
+RED=%{$fg_no_bold[red]%}
+BLUE=%{$fg_no_bold[blue]%}
 RESET=$reset_color
 
 git_prompt_info() {
@@ -33,7 +33,7 @@ git_prompt_info() {
 		STATUS="$ZSH_THEME_GIT_PROMPT_NONE"
 	fi
 
-	echo "$(_timeSinceCommit) %{$CYAN%}[%{$WHITE%}$(_whatChanged) files%{$CYAN%}] [$STATUS$(parse_git_dirty)%{$CYAN%}] [%{$YELLOW%}$(_currentBranch)%{$CYAN%}]%{$resetcolor%}"
+	echo "$(_timeSinceCommit) %{$CYAN%}[%{$WHITE%}$(_whatChanged) files%{$CYAN%}] [$STATUS$(parse_git_dirty)%{$CYAN%}] [%{$YELLOW%}$(_currentBranch)%{$CYAN%}]%{$RESET%}"
 }
 
 _whatChanged() {
@@ -104,16 +104,16 @@ _timeSinceCommit() {
     sub_years=$((years % 31557600))
 
     if [ $months -ge 12 ]; then # Years
-      extra_months=$((days - 12))
+      extra_months=$((months - 12))
       commit_age="${sub_years}y${extra_months}m"
     elif [ $days -gt 30 ]; then # Months
       extra_days=$((days - 30))
       commit_age="${sub_months}m${extra_days}d"
     elif [ $hours -gt 24 ]; then # Days
-      extra_hours=$((hours - 24))
+      extra_hours=$(((hours - 24) / 24))
       commit_age="${sub_days}d${extra_hours}h"
     elif [ $minutes -gt 60 ]; then # Hours
-      extra_minutes=$((minutes - 60))
+      extra_minutes=$(((minutes - 60) / 60))
       commit_age="${sub_hours}h${extra_minutes}m"
     elif [ $seconds_since_last_commit -gt 60 ]; then # Minutes
       commit_age="${minutes}m"
@@ -129,20 +129,21 @@ _timeSinceCommit() {
 MODE_INDICATOR="%{$YELLOW%}❮%{$RESET%}%{$YELLOW%}❮❮%{$RESET%}"
 
 SH_THEME_GIT_PROMPT_PREFIX=""
-ZSH_THEME_GIT_PROMPT_SUFFIX="%{$RESET%}"
-ZSH_THEME_GIT_PROMPT_NONE="%{$GREEN%}▴%{$RESET%}"
+ZSH_THEME_GIT_PROMPT_SUFFIX=""
 ZSH_THEME_GIT_PROMPT_DIRTY="%{$RED%}dirty%{$RESET%}"
 ZSH_THEME_GIT_PROMPT_CLEAN="%{$GREEN%}clean%{$RESET%}"
-ZSH_THEME_GIT_PROMPT_ADDED="%{$GREEN%}»%{$RESET%}"
-ZSH_THEME_GIT_PROMPT_AHEAD="%{$GREEN%}↑%{$RESET%}"
-ZSH_THEME_GIT_PROMPT_BEHIND="%{$GREEN%}↓%{$RESET%}"
-ZSH_THEME_GIT_PROMPT_STAGED="%{$GREEN%}→%{$RESET%}"
-ZSH_THEME_GIT_PROMPT_UNSTAGED="%{$RED%}←%{$RESET%}"
-ZSH_THEME_GIT_PROMPT_MODIFIED="%{$RED%}↘%{$RESET%}"
-ZSH_THEME_GIT_PROMPT_UNMERGED="%{$RED%}↙%{$RESET%}"
-ZSH_THEME_GIT_PROMPT_UNTRACKED="%{$RED%}↖%{$RESET%}"
-ZSH_THEME_GIT_PROMPT_DELETED="%{$RED%}«%{$RESET%}"
-ZSH_THEME_GIT_PROMPT_RENAMED="%{$RED%}‹%{$RESET%}"
+# remove the text in these ones after you've learned their meaning to save space
+ZSH_THEME_GIT_PROMPT_NONE="%{$GREEN%}★ all good:%{$RESET%}"
+ZSH_THEME_GIT_PROMPT_AHEAD="%{$GREEN%}↑ ahead:%{$RESET%}"
+ZSH_THEME_GIT_PROMPT_BEHIND="%{$GREEN%}↓ behind:%{$RESET%}"
+ZSH_THEME_GIT_PROMPT_STAGED="%{$RED%}→ staged:%{$RESET%}"
+ZSH_THEME_GIT_PROMPT_UNSTAGED="%{$RED%}← unstaged:%{$RESET%}"
+ZSH_THEME_GIT_PROMPT_UNMERGED="%{$RED%}↙ unmerged:%{$RESET%}"
+ZSH_THEME_GIT_PROMPT_RENAMED="%{$RED%}↖ renamed:%{$RESET%}"
+ZSH_THEME_GIT_PROMPT_MODIFIED="%{$RED%}↗ modified:%{$RESET%}"
+ZSH_THEME_GIT_PROMPT_UNTRACKED="%{$RED%}↘ untracked:%{$RESET%}"
+ZSH_THEME_GIT_PROMPT_ADDED="%{$GREEN%}+ added:%{$RESET%}"
+ZSH_THEME_GIT_PROMPT_DELETED="%{$RED%}- deleted:%{$RESET%}"
 
 # Colors vary depending on time lapsed.
 ZSH_THEME_GIT_TIME_SINCE_COMMIT_SHORT="%{$GREEN%}"
@@ -151,7 +152,5 @@ ZSH_THEME_GIT_TIME_SINCE_COMMIT_LONG="%{$RED%}"
 ZSH_THEME_GIT_TIME_SINCE_COMMIT_NEUTRAL="%{$WHITE%}"
 
 # LS colors, made with https://geoff.greer.fm/lscolors/
-export LSCOLORS="exfxcxdxbxegedabagacad"
-export LS_COLORS='di=34;40:ln=35;40:so=32;40:pi=33;40:ex=31;40:bd=34;46:cd=34;43:su=0;41:sg=0;46:tw=0;42:ow=0;43:'
+export LS_COLORS='di=1;30;46:ln=1;35:so=1;32:pi=1;33:ex=1;36:bd=34;46:cd=36:su=1;0;41:sg=1;30;41:tw=30;46:ow=30;46'
 export GREP_COLOR='1;33'
-
