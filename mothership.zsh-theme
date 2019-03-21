@@ -33,11 +33,7 @@ git_prompt_info() {
 		STATUS="$ZSH_THEME_GIT_PROMPT_NONE"
 	fi
 
-	echo "$(_timeSinceCommit) %{$CYAN%}[%{$WHITE%}$(_whatChanged) files%{$CYAN%}] [$STATUS$(parse_git_dirty)%{$CYAN%}] [%{$YELLOW%}$(_currentBranch)%{$CYAN%}]%{$RESET%}"
-}
-
-_whatChanged() {
-  command git whatchanged -1 --format=oneline | wc -l
+	echo "$(_timeSinceCommit) %{$CYAN%}[$STATUS$(parse_git_dirty)%{$CYAN%}] [%{$YELLOW%}$(_currentBranch)%{$CYAN%}]%{$RESET%}"
 }
 
 PROMPT='
@@ -132,16 +128,15 @@ SH_THEME_GIT_PROMPT_PREFIX=""
 ZSH_THEME_GIT_PROMPT_SUFFIX=""
 ZSH_THEME_GIT_PROMPT_DIRTY="%{$RED%}dirty%{$RESET%}"
 ZSH_THEME_GIT_PROMPT_CLEAN="%{$GREEN%}clean%{$RESET%}"
-# remove the text in these ones after you've learned their meaning to save space
-ZSH_THEME_GIT_PROMPT_NONE="%{$GREEN%}★ all good:%{$RESET%}"
-ZSH_THEME_GIT_PROMPT_AHEAD="%{$GREEN%}↑ ahead:%{$RESET%}"
-ZSH_THEME_GIT_PROMPT_BEHIND="%{$GREEN%}↓ behind:%{$RESET%}"
-ZSH_THEME_GIT_PROMPT_STAGED="%{$RED%}→ staged:%{$RESET%}"
-ZSH_THEME_GIT_PROMPT_UNSTAGED="%{$RED%}← unstaged:%{$RESET%}"
-ZSH_THEME_GIT_PROMPT_UNMERGED="%{$RED%}↙ unmerged:%{$RESET%}"
-ZSH_THEME_GIT_PROMPT_RENAMED="%{$RED%}↖ renamed:%{$RESET%}"
-ZSH_THEME_GIT_PROMPT_MODIFIED="%{$RED%}↗ modified:%{$RESET%}"
-ZSH_THEME_GIT_PROMPT_UNTRACKED="%{$RED%}↘ untracked:%{$RESET%}"
+ZSH_THEME_GIT_PROMPT_NONE="%{$GREEN%}good:%{$RESET%}"
+ZSH_THEME_GIT_PROMPT_AHEAD="%{$GREEN%}ahead:%{$RESET%}"
+ZSH_THEME_GIT_PROMPT_BEHIND="%{$GREEN%}behind:%{$RESET%}"
+ZSH_THEME_GIT_PROMPT_STAGED="%{$RED%}staged:%{$RESET%}"
+ZSH_THEME_GIT_PROMPT_UNSTAGED="%{$RED%}unstaged:%{$RESET%}"
+ZSH_THEME_GIT_PROMPT_UNMERGED="%{$RED%}unmerged:%{$RESET%}"
+ZSH_THEME_GIT_PROMPT_RENAMED="%{$RED%}renamed:%{$RESET%}"
+ZSH_THEME_GIT_PROMPT_MODIFIED="%{$RED%}modified:%{$RESET%}"
+ZSH_THEME_GIT_PROMPT_UNTRACKED="%{$RED%}untracked:%{$RESET%}"
 ZSH_THEME_GIT_PROMPT_ADDED="%{$GREEN%}+ added:%{$RESET%}"
 ZSH_THEME_GIT_PROMPT_DELETED="%{$RED%}- deleted:%{$RESET%}"
 
