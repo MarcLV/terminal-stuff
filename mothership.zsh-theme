@@ -33,7 +33,11 @@ git_prompt_info() {
 		STATUS="$ZSH_THEME_GIT_PROMPT_NONE"
 	fi
 
-	echo "$(_timeSinceCommit) %{$CYAN%}[$STATUS$(parse_git_dirty)%{$CYAN%}] [%{$YELLOW%}$(_currentBranch)%{$CYAN%}]%{$RESET%}"
+	echo "$(_timeSinceCommit) %{$CYAN%}[%{$WHITE%}$(_whatChanged) files%{$CYAN%}] [$STATUS$(parse_git_dirty)%{$CYAN%}] [%{$YELLOW%}$(_currentBranch)%{$CYAN%}]%{$RESET%}"
+}
+
+_whatChanged() {
+  command git whatchanged -1 --format=oneline | wc -l
 }
 
 PROMPT='
@@ -52,7 +56,6 @@ _clock() {
 _currentBranch() {
   echo "%18>…>$(current_branch)%>>"
 }
-
 
 _userHost() {
   # Change user color depending on permissions
@@ -84,41 +87,48 @@ _timeSinceCommit() {
   if last_commit=$(git log --pretty=format:'%at' -1 2> /dev/null); then
     now=$(date +%s)
     seconds_since_last_commit=$((now-last_commit))
+    original_minutes=$((seconds_since_last_commit/60))
+    original_hours=$((original_minutes/60))
+    original_days=$((original_hours/24))
+    original_months=$((original_days/30))
+    original_years=$((original_months/12))
 
-    # Totals
-    minutes=$((seconds_since_last_commit / 60))
-    hours=$((seconds_since_last_commit / 3600))
-    days=$((seconds_since_last_commit / 86400))
-    months=$((seconds_since_last_commit / 2629800))
-    years=$((seconds_since_last_commit / 31557600))
+    # Calculate and display correct time (ex: instead of 63 days it will display 2m3d which is 2 months and 3 days (as in 63..))
+    years=$[$diff/$[60*60*24*365]]
+    diff=$[$diff%(60*60*24*365)]
+    months=$[$diff/(60*60*24*30)]
+    diff=$[$diff%(60*60*24*30)]
+    days=$[$diff/(60*60*24)]
+    diff=$[$diff%(60*60*24)]
+    hours=$[$diff/(60*60)]
+    diff=$[$diff%(60*60)]
+    minutes=$[$diff/60]
 
-    # Sub-hours and sub-minutes    
-    sub_minutes=$((minutes % 60))
-    sub_hours=$((hours % 24))
-    sub_days=$((days % 86400))
-    sub_months=$((months % 2629800))
-    sub_years=$((years % 31557600))
-
-    if [ $months -ge 12 ]; then # Years
-      extra_months=$((months - 12))
-      commit_age="${sub_years}y${extra_months}m"
-    elif [ $days -gt 30 ]; then # Months
-      extra_days=$((days - 30))
-      commit_age="${sub_months}m${extra_days}d"
-    elif [ $hours -gt 24 ]; then # Days
-      extra_hours=$(((hours - 24) / 24))
-      commit_age="${sub_days}d${extra_hours}h"
-    elif [ $minutes -gt 60 ]; then # Hours
-      extra_minutes=$(((minutes - 60) / 60))
-      commit_age="${sub_hours}h${extra_minutes}m"
-    elif [ $seconds_since_last_commit -gt 60 ]; then # Minutes
-      commit_age="${minutes}m"
-    else # Seconds
-      commit_age="${seconds_since_last_commit}s"
+    # Years
+    if [ $original_months -ge 12 ]; then
+      commit_age="${years}y${months}m"
+    # Months
+    elif [ $original_days -ge 30 ]; then
+      commit_age="${months}m${days}d"
+    # Days
+    elif [ $original_hours -ge 24 ]; then
+      commit_age="${days}d${hours}h"
+    # Hours
+    elif [ $original_minutes -ge 60 ]; then 
+      commit_age="${hours}h${minutes}m"
+    # Minutes
+    elif [ $seconds_since_last_commit -ge 60 ]; then 
+      commit_age="${minutes}m${seconds_since_last_commit}s"
+    # Seconds
+    else
+      commit_age="${seconds_since_last_commit}s.."
     fi
 
     color=$ZSH_THEME_GIT_TIME_SINCE_COMMIT_NEUTRAL
     echo "%{$CYAN%}[$color$commit_age%{$CYAN%}]%{$RESET%}"
+    testing=$[15-($months * $months)]
+
+    #echo "$commit_age: y:$years m:$months d:$days h:$hours m:$minutes test:$testing"
   fi
 }
 
@@ -128,16 +138,16 @@ SH_THEME_GIT_PROMPT_PREFIX=""
 ZSH_THEME_GIT_PROMPT_SUFFIX=""
 ZSH_THEME_GIT_PROMPT_DIRTY="%{$RED%}dirty%{$RESET%}"
 ZSH_THEME_GIT_PROMPT_CLEAN="%{$GREEN%}clean%{$RESET%}"
-ZSH_THEME_GIT_PROMPT_NONE="%{$GREEN%}good:%{$RESET%}"
+ZSH_THEME_GIT_PROMPT_NONE="%{$GREEN%}none:%{$RESET%}"
 ZSH_THEME_GIT_PROMPT_AHEAD="%{$GREEN%}ahead:%{$RESET%}"
-ZSH_THEME_GIT_PROMPT_BEHIND="%{$GREEN%}behind:%{$RESET%}"
-ZSH_THEME_GIT_PROMPT_STAGED="%{$RED%}staged:%{$RESET%}"
+ZSH_THEME_GIT_PROMPT_BEHIND="%{$BLUE%}behind:%{$RESET%}"
+ZSH_THEME_GIT_PROMPT_STAGED="%{$BLUE%}staged:%{$RESET%}"
 ZSH_THEME_GIT_PROMPT_UNSTAGED="%{$RED%}unstaged:%{$RESET%}"
 ZSH_THEME_GIT_PROMPT_UNMERGED="%{$RED%}unmerged:%{$RESET%}"
 ZSH_THEME_GIT_PROMPT_RENAMED="%{$RED%}renamed:%{$RESET%}"
 ZSH_THEME_GIT_PROMPT_MODIFIED="%{$RED%}modified:%{$RESET%}"
 ZSH_THEME_GIT_PROMPT_UNTRACKED="%{$RED%}untracked:%{$RESET%}"
-ZSH_THEME_GIT_PROMPT_ADDED="%{$GREEN%}+ added:%{$RESET%}"
+ZSH_THEME_GIT_PROMPT_ADDED="%{$RED%}+ added:%{$RESET%}"
 ZSH_THEME_GIT_PROMPT_DELETED="%{$RED%}- deleted:%{$RESET%}"
 
 # Colors vary depending on time lapsed.
