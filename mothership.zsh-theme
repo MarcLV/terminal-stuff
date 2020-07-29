@@ -111,22 +111,22 @@ _timeSinceCommit() {
 
     # Years
     if [ $monthsLast -ge 12 ]; then
-      commit_age="${years}y${months}m"
+      commit_age="${years}%{$RED%}y%{$RESET%} ${months}%{$RED%}m%{$RESET%}"
     # Months
     elif [ $daysLast -ge 30 ]; then
-      commit_age="${months}m${days}d"
+      commit_age="${months}%{$BLUE%}m%{$RESET%} ${days}%{$BLUE%}d%{$RESET%}"
     # Days
     elif [ $hoursLast -ge 24 ]; then
-      commit_age="${days}d${hours}h"
+      commit_age="${days}%{$BLUE%}d%{$RESET%} ${hours}%{$GREEN%}h%{$RESET%}"
     # Hours
     elif [ $minutesLast -ge 60 ]; then 
-      commit_age="${hours}h${minutes}m"
+      commit_age="${hours}%{$GREEN%}h%{$RESET%} ${minutes}%{$GREEN%}m%{$RESET%}"
     # Minutes
     elif [ $diff -ge 60 ]; then 
-      commit_age="${minutes}m${seconds}s"
+      commit_age="%{$GREEN%}${minutes}min%{$RESET%}"
     # Seconds
     else
-      commit_age="${seconds_since_last_commit}s"
+      commit_age="${seconds_since_last_commit}%{$GREEN%}sec%{$RESET%}"
     fi
 
     color=$ZSH_THEME_GIT_TIME_SINCE_COMMIT_NEUTRAL
