@@ -126,7 +126,7 @@ _timeSinceCommit() {
       commit_age="%{$GREEN%}${minutes}min%{$RESET%}"
     # Seconds
     else
-      commit_age="${seconds_since_last_commit}%{$GREEN%}sec%{$RESET%}"
+      commit_age="%{$GREEN%}${seconds_since_last_commit}sec%{$RESET%}"
     fi
 
     color=$ZSH_THEME_GIT_TIME_SINCE_COMMIT_NEUTRAL
