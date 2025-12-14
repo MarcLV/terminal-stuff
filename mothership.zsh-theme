@@ -1,145 +1,125 @@
 # Color shortcuts
-CYAN=%{$fg_no_bold[cyan]%}
-YELLOW=%{$fg_bold[yellow]%}
-WHITE=%{$fg_no_bold[white]%}
-GREEN=%{$fg_no_bold[green]%}
-RED=%{$fg_no_bold[red]%}
-BLUE=%{$fg_no_bold[blue]%}
-RESET=$reset_color
+CYAN="%{$fg_no_bold[cyan]%}"
+YELLOW="%{$fg_bold[yellow]%}"
+WHITE="%{$fg_no_bold[white]%}"
+GREEN="%{$fg_no_bold[green]%}"
+RED="%{$fg_no_bold[red]%}"
+BLUE="%{$fg_no_bold[blue]%}"
+RESET="%{$reset_color%}"
 
-git_prompt_info() {
-	ref=$(git symbolic-ref HEAD 2> /dev/null) || return
-	INDEX=$(git status --porcelain 2> /dev/null)
+# Git prompt info
+_git_prompt_info() {
+  if git rev-parse --is-inside-work-tree > /dev/null 2>&1; then
+    local ref=$(git symbolic-ref HEAD 2>/dev/null || git rev-parse --short HEAD 2>/dev/null || echo "No commits..")
+    local INDEX=$(git status --porcelain 2>/dev/null)
+    local STATUS=""
 
-	# is branch ahead?
-	if $(echo "$(git log origin/$(git_current_branch)..HEAD 2> /dev/null)" | grep '^commit' &> /dev/null); then
-		STATUS="$ZSH_THEME_GIT_PROMPT_AHEAD"
-	# is branch behind?
-	elif $(echo "$(git log HEAD..origin/$(git_current_branch) 2> /dev/null)" | grep '^commit' &> /dev/null); then
-		STATUS="$ZSH_THEME_GIT_PROMPT_BEHIND"
-	# is anything staged?
-	elif $(echo "$INDEX" | command grep -E -e '^(D[ M]|[MARC][ MD]) ' &> /dev/null); then
-		STATUS="$ZSH_THEME_GIT_PROMPT_STAGED"
-	# is anything unstaged?
-	elif $(echo "$INDEX" | command grep '^.[MTD] ' &> /dev/null); then
-		STATUS="$ZSH_THEME_GIT_PROMPT_UNSTAGED"
-	# is anything untracked?
-	elif $(echo "$INDEX" | grep '^?? ' &> /dev/null); then
-		STATUS="$ZSH_THEME_GIT_PROMPT_UNTRACKED"
-	# is anything unmerged?
-	elif $(echo "$INDEX" | command grep -E -e '^(A[AU]|D[DU]|U[ADU]) ' &> /dev/null); then
-		STATUS="$ZSH_THEME_GIT_PROMPT_UNMERGED"
-	else
-		STATUS="$ZSH_THEME_GIT_PROMPT_NONE"
-	fi
+    # Determine git status
+    if [ "$(git rev-parse --is-empty)" = "true" ]; then
+      echo "%{$CYAN%}[%{$RESET%}Empty repo%{$CYAN%}]"
+      return
+    fi
+    if git log origin/$(git_current_branch)..HEAD &>/dev/null; then
+      STATUS="$ZSH_THEME_GIT_PROMPT_AHEAD"
+    elif git log HEAD..origin/$(git_current_branch) &>/dev/null; then
+      STATUS="$ZSH_THEME_GIT_PROMPT_BEHIND"
+    elif echo "$INDEX" | grep -qE '^(D[ M]|[MARC][ MD]) '; then
+      STATUS="$ZSH_THEME_GIT_PROMPT_STAGED"
+    elif echo "$INDEX" | grep -q '^[MTD] '; then
+      STATUS="$ZSH_THEME_GIT_PROMPT_UNSTAGED"
+    elif echo "$INDEX" | grep -q '^\?\? '; then
+      STATUS="$ZSH_THEME_GIT_PROMPT_UNTRACKED"
+    elif echo "$INDEX" | grep -qE '^(A[AU]|D[DU]|U[ADU]) '; then
+      STATUS="$ZSH_THEME_GIT_PROMPT_UNMERGED"
+    else
+      STATUS="$ZSH_THEME_GIT_PROMPT_NONE"
+    fi
 
-	echo "$(_timeSinceCommit) %{$CYAN%}[%{$WHITE%}$(_whatChanged) files%{$CYAN%}] [$STATUS$(parse_git_dirty)%{$CYAN%}] [%{$YELLOW%}$(_currentBranch)%{$CYAN%}]%{$RESET%}"
+    echo "%{$CYAN%}[%{$YELLOW%}$(_current_branch)%{$CYAN%}]%{$RESET%} %{$CYAN%}[%{$RESET%}$(_shortened_commit)%{$CYAN%}] [%{$RESET%}$STATUS$(parse_git_dirty)%{$CYAN%}]"
+  else
+    count=$(find . -maxdepth 1 -not -path '*/\.*' | wc -l)
+    echo "%{$CYAN%}[%{$RESET%}$((count - 1)) files%{$CYAN%}]"
+  fi
 }
 
-_whatChanged() {
-  command git whatchanged -1 --format=oneline | wc -l
+_shortened_commit() {
+  if git rev-parse HEAD >/dev/null 2>&1; then
+    # Get the latest commit message
+    local latest_commit=$(git log --format=%B -n 1 | head -n 1)
+    # Shorten the message to x characters max
+    local shortened_commit=${latest_commit:0:15}
+
+    # If the message is less than x characters, use it as is
+    if [ ${#shortened_commit} -lt 15 ]; then
+        echo "$latest_commit"
+    else
+        echo "$shortened_commit.."
+    fi
+  else
+    local BLINK="\e[5m"
+    local RESET="\e[0m"
+    echo "${BLINK}no commits${RESET}"
+  fi
 }
 
+# Set prompt
 PROMPT='
-%{$CYAN%}┌─[$(_clock)%{$CYAN%}] ${_current_dir} ${_return_status}
-%{$CYAN%}└$(_userHost)%{$CYAN%}╼ '
+%{$CYAN%}┌─[$(_time) ${_current_dir} ${_error_status}
+%{$CYAN%}└─ %{$RESET%}$(_user_host) '
 
-RPROMPT='$(_viStatus)%{$(echotc UP 1)%} $(git_prompt_info) %{$RESET%}%{$(echotc DO 1)%}'
+RPROMPT='$(_viStatus)%{$(echotc UP 1)%} $(_git_prompt_info) %{$RESET%}%{$(echotc DO 1)%}'
 
-local _current_dir="%{$YELLOW%}%2~%{$RESET%} "
-local _return_status="%{$fg_bold[red]%}%(?..…err!)%{$RESET%}"
+# Current directory and return status
+_current_dir="%{$YELLOW%}%2~%{$RESET%} "
+_error_status="%{$fg_bold[red]%}%(?..…err!)%{$RESET%}"
 
-_clock() {
-	echo $'%F{white}%*%f'
+_date() {
+  echo "%{$CYAN%}[%{$RESET%}$(date '+%a')%{$CYAN%}]"
 }
 
-_currentBranch() {
+# Current time in formatted style
+_time() {
+  echo "%{$RESET%}$(date +'%H:%M:%S')%{$CYAN%}]"
+}
+_day() {
+  date '+%a'
+}
+
+# Current branch
+_current_branch() {
   echo "%18>…>$(current_branch)%>>"
 }
 
-_userHost() {
-  # Change user color depending on permissions
-  if [[ $USER == "root" ]]; then
-    rootColor=$RED
-  else
-    rootColor=$CYAN
-  fi
+# User and host info
+_user_host() {
+  local me
 
-  # Show machine name is ssh connection
   if [[ -n $SSH_CONNECTION ]]; then
     me="%n@%m"
-  elif [[ $LOGNAME != $USER ]]; then
+  else
     me="%n"
   fi
-  if [[ -n $me ]]; then
-    echo "%{$fg_bold[$rootColor]%}$me$RESET"
-  fi
+
+  local BLINK="\e[5m"
+  local RESET="\e[0m"
+  if [[ $USER == "root" ]]; then
+    echo "${BLINK}%{$RED%}$me${RESET}%{$CYAN%}:" 
+  elif [[ -n $SSH_CONNECTION ]]; then
+    echo "${BLINK}%{$GREEN%}$me${RESET}%{$CYAN%}:" 
+  else
+    echo "%{$RESET%}$me%{$CYAN%}:"
+  fi  
 }
 
+# Vi mode status
 _viStatus() {
-  if {echo $fpath | grep -q "plugins/vi-mode"}; then
+  if echo $fpath | grep -q "plugins/vi-mode"; then
     echo "$(vi_mode_prompt_info)"
   fi
 }
 
-
-_timeSinceCommit() {
-  if last_commit=$(git log --pretty=format:'%at' -1 2> /dev/null); then
-    now=$(date +%s)
-    seconds_since_last_commit=$((now-last_commit))
-    diff=seconds_since_last_commit
-
-    # Totals
-    minutesLast=$((seconds_since_last_commit/60))
-    hoursLast=$((minutesLast/60))
-    daysLast=$((hoursLast/24))
-    monthsLast=$((daysLast/30))
-    yearsLast=$((monthsLast/12))
-
-    testing=$[15-($monthsLast * $monthsLast)]
-
-    years=$[$diff/$[60*60*24*365]]
-    diff=$[$diff%(60*60*24*365)]
-    months=$[$diff/(60*60*24*30)]
-    diff=$[$diff%(60*60*24*30)]
-    days=$[$diff/(60*60*24)]
-    diff=$[$diff%(60*60*24)]
-    hours=$[$diff/(60*60)]
-    diff=$[$diff%(60*60)]
-    minutes=$[$diff/60]
-    seconds=$[$diff%60]
-
-    # Years
-    if [ $monthsLast -ge 12 ]; then
-      commit_age="${years}%{$RED%}y%{$RESET%} ${months}%{$RED%}m%{$RESET%}"
-    # Months
-    elif [ $daysLast -ge 30 ]; then
-      commit_age="${months}%{$BLUE%}m%{$RESET%} ${days}%{$BLUE%}d%{$RESET%}"
-    # Days
-    elif [ $hoursLast -ge 24 ]; then
-      commit_age="${days}%{$BLUE%}d%{$RESET%} ${hours}%{$GREEN%}h%{$RESET%}"
-    # Hours
-    elif [ $minutesLast -ge 60 ]; then 
-      commit_age="${hours}%{$GREEN%}h%{$RESET%} ${minutes}%{$GREEN%}m%{$RESET%}"
-    # Minutes
-    elif [ $diff -ge 60 ]; then 
-      commit_age="%{$GREEN%}${minutes}min%{$RESET%}"
-    # Seconds
-    else
-      commit_age="%{$GREEN%}${seconds_since_last_commit}sec%{$RESET%}"
-    fi
-
-    color=$ZSH_THEME_GIT_TIME_SINCE_COMMIT_NEUTRAL
-    echo "%{$CYAN%}[$color$commit_age%{$CYAN%}]%{$RESET%}"
-    testing=$[15-($months * $months)]
-
-    #echo "$commit_age: y:$years m:$months d:$days h:$hours m:$minutes test:$testing"
-  fi
-}
-
-MODE_INDICATOR="%{$YELLOW%}❮%{$RESET%}%{$YELLOW%}❮❮%{$RESET%}"
-
-SH_THEME_GIT_PROMPT_PREFIX=""
+# Git status prompts
+ZSH_THEME_GIT_PROMPT_PREFIX=""
 ZSH_THEME_GIT_PROMPT_SUFFIX=""
 ZSH_THEME_GIT_PROMPT_DIRTY="%{$RED%}dirty%{$RESET%}"
 ZSH_THEME_GIT_PROMPT_CLEAN="%{$GREEN%}clean%{$RESET%}"
@@ -149,18 +129,33 @@ ZSH_THEME_GIT_PROMPT_BEHIND="%{$RED%}behind%{$CYAN%}:%{$RESET%}"
 ZSH_THEME_GIT_PROMPT_STAGED="%{$BLUE%}staged%{$CYAN%}:%{$RESET%}"
 ZSH_THEME_GIT_PROMPT_UNSTAGED="%{$WHITE%}unstaged%{$CYAN%}:%{$RESET%}"
 ZSH_THEME_GIT_PROMPT_UNMERGED="%{$BLUE%}unmerged%{$CYAN%}:%{$RESET%}"
-ZSH_THEME_GIT_PROMPT_RENAMED="%{$RED%}renamed%{$CYAN%}:%{$RESET%}"
-ZSH_THEME_GIT_PROMPT_MODIFIED="%{$RED%}modified%{$CYAN%}:%{$RESET%}"
 ZSH_THEME_GIT_PROMPT_UNTRACKED="%{$RED%}untracked%{$CYAN%}:%{$RESET%}"
-ZSH_THEME_GIT_PROMPT_ADDED="%{$RED%}added%{$CYAN%}:%{$RESET%}"
-ZSH_THEME_GIT_PROMPT_DELETED="%{$RED%}deleted%{$CYAN%}:%{$RESET%}"
 
-# Colors vary depending on time lapsed.
+# Colors for time since last commit
 ZSH_THEME_GIT_TIME_SINCE_COMMIT_SHORT="%{$GREEN%}"
 ZSH_THEME_GIT_TIME_SHORT_COMMIT_MEDIUM="%{$YELLOW%}"
 ZSH_THEME_GIT_TIME_SINCE_COMMIT_LONG="%{$RED%}"
 ZSH_THEME_GIT_TIME_SINCE_COMMIT_NEUTRAL="%{$WHITE%}"
 
-# LS colors, made with https://geoff.greer.fm/lscolors/
-export LS_COLORS='di=1;30;46:ln=1;35:so=1;32:pi=1;33:ex=1;36:bd=34;46:cd=36:su=1;0;41:sg=1;30;41:tw=30;46:ow=30;46'
+# LS colors
+export LS_COLORS='rs=0:di=01;34:ln=01;36:mh=00:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=40;31;01:su=37;41:sg=30;43:ca=30;41:tw=30;42:ow=34;42:st=37;44:ex=01;32:*.tar=01;31:*.tgz=01;31:*.arj=01;31:*.taz=01;31:*.lzh=01;31:*.lzma=01;31:*.tlz=01;31:*.txz=01;31:*.zip=01;31:*.z=01;31:*.Z=01;31:*.dz=01;31:*.gz=01;31:*.lz=01;31:*.xz=01;31:*.bz2=01;31:*.bz=01;31:*.tbz=01;31:*.tbz2=01;31:*.tz=01;31:*.deb=01;31:*.rpm=01;31:*.jar=01;31:*.rar=01;31:*.ace=01;31:*.zoo=01;31:*.cpio=01;31:*.7z=01;31:*.rz=01;31:*.jpg=01;35:*.jpeg=01;35:*.gif=01;35:*.bmp=01;35:*.pbm=01;35:*.pgm=01;35:*.ppm=01;35:*.tga=01;35:*.xbm=01;35:*.xpm=01;35:*.tif=01;35:*.tiff=01;35:*.png=01;35:*.svg=01;35:*.svgz=01;35:*.mng=01;35:*.pcx=01;35:*.mov=01;35:*.mpg=01;35:*.mpeg=01;35:*.m2v=01;35:*.mkv=01;35:*.ogm=01;35:*.mp4=01;35:*.m4v=01;35:*.mp4v=01;35:*.vob=01;35:*.qt=01;35:*.nuv=01;35:*.wmv=01;35:*.asf=01;35:*.rm=01;35:*.rmvb=01;35:*.flc=01;35:*.avi=01;35:*.fli=01;35:*.flv=01;35:*.gl=01;35:*.dl=01;35:*.xcf=01;35:*.xwd=01;35:*.yuv=01;35:*.cgm=01;35:*.emf=01;35:*.axv=01;35:*.anx=01;35:*.ogv=01;35:*.ogx=01;35:*.aac=00;36:*.au=00;36:*.flac=00;36:*.mid=00;36:*.midi=00;36:*.mka=00;36:*.mp3=00;36:*.mpc=00;36:*.ogg=00;36:*.ra=00;36:*.wav=00;36:*.axa=00;36:*.oga=00;36:*.spx=00;36:*.xspf=00;36:';
 export GREP_COLOR='1;33'
+
+# Reset terminal every second (for clock)
+TMOUT=1
+TRAPALRM() {
+    case "$WIDGET" in
+        expand-or-complete|up-line-or-beginning-search|down-line-or-beginning-search|.history-incremental-search-backward|.history-incremental-search-forward|.history-incremental-search-backward|.history-incremental-search-forward)
+            ;;
+
+        *)
+            zle reset-prompt
+            ;;
+    esac
+}
+
+cd () {
+    builtin cd "$@"
+    ls
+}
+
